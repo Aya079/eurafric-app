@@ -29,10 +29,6 @@ public class AuthController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /**
-     * Endpoint POST /api/auth/login
-     * Reçoit JSON : { "username": "...", "password": "..." }
-     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
         String username = loginRequest.get("username");
@@ -43,11 +39,9 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(username, password)
             );
 
-            // Récupérer l'utilisateur complet
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
 
-            // Tu peux retourner un JSON avec les infos nécessaires côté Angular
             Map<String, Object> response = new HashMap<>();
             response.put("id", user.getId());
             response.put("username", user.getUsername());
@@ -57,7 +51,6 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            // Si authentification échoue
             Map<String, String> error = new HashMap<>();
             error.put("error", "Identifiants incorrects");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);

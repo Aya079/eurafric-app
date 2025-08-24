@@ -8,62 +8,45 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.Customizer;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class SecurityConfig {
 
-    /**
-     * Bean pour encoder les mots de passe avec BCrypt
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Bean AuthenticationManager (utile si tu veux l'injecter pour custom login)
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
-    /**
-     * Configuration de la sécurité HTTP avec Spring Security 6
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Désactiver CSRF pour API REST
                 .csrf(csrf -> csrf.disable())
-
-                // Autorisations selon les rôles
                 .authorizeHttpRequests(auth -> auth
-                        // Autoriser login, swagger, h2-console sans authentification
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/h2-console/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
+                        // Autoriser la connexion WebSocket (SockJS fait /ws-chat/info, /ws-chat/…)
+                        .requestMatchers("/ws-chat/**").permitAll()
 
-                        // Endpoints réservés ADMIN
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Auth public pour l'authentification
+                        .requestMatchers("/api/auth/**").permitAll()
 
-                        // Endpoints accessibles à USER et ADMIN
-                        .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
+                        // Ces API nécessitent une connexion
+                        .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/reports/**").authenticated()
+                        .requestMatchers("/api/notifications/**").authenticated()
 
-                        // Toute autre requête nécessite authentification
-                        .anyRequest().authenticated()
+                        // Toute autre requête → libre
+                        .anyRequest().permitAll()
                 )
-
-                // HTTP Basic si nécessaire pour test rapide
-                .httpBasic(Customizer.withDefaults());
-
-        // Permettre l'affichage H2 console dans un frame
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
-
+                .httpBasic(withDefaults()); // permet Basic Auth dans Postman
         return http.build();
     }
+
+
 }

@@ -19,24 +19,28 @@ public class DataInitializer {
 
     @PostConstruct
     public void initUsers() {
-        if (userRepository.findByUsername("admin").isEmpty()) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setEmail("admin@eurafric.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole("ROLE_ADMIN");
-            userRepository.save(admin);
-            System.out.println("✅ Admin créé : admin / admin123");
-        }
+        createOrUpdateUser("admin", "admin@eurafric.com", "admin123", "ROLE_ADMIN");
+        createOrUpdateUser("ayoub", "ayoub@eurafric.com", "123456", "ROLE_USER");
+        createOrUpdateUser("Aya", "aya@eurafric.com", "aya123", "ROLE_USER"); // respecter la casse
+    }
 
-        if (userRepository.findByUsername("ayoub").isEmpty()) {
-            User user = new User();
-            user.setUsername("ayoub");
-            user.setEmail("ayoub@eurafric.com");
-            user.setPassword(passwordEncoder.encode("123456"));
-            user.setRole("ROLE_USER");
-            userRepository.save(user);
-            System.out.println("✅ Utilisateur créé : ayoub / 123456");
-        }
+    private void createOrUpdateUser(String username, String email, String password, String role) {
+        userRepository.findByUsername(username).ifPresentOrElse(
+                existingUser -> {
+                    // Optionnel : mettre à jour le mot de passe si nécessaire
+                    existingUser.setPassword(passwordEncoder.encode(password));
+                    userRepository.save(existingUser);
+                    System.out.println("🔹 Mot de passe mis à jour pour : " + username);
+                },
+                () -> {
+                    User newUser = new User();
+                    newUser.setUsername(username);
+                    newUser.setEmail(email);
+                    newUser.setPassword(passwordEncoder.encode(password));
+                    newUser.setRole(role);
+                    userRepository.save(newUser);
+                    System.out.println("✅ Utilisateur créé : " + username + " / " + password);
+                }
+        );
     }
 }
